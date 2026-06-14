@@ -27,7 +27,7 @@ topology*, IEEE TAC 38 (1993) 1371–1383.
 ## Install
 
 ```bash
-pip install nugap.
+pip install nugap
 ```
 
 ## Usage

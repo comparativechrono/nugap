@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=77.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nugap"
+version = "0.1.0"
+description = "Vinnicombe nu-gap metric and a pipeline for comparing time-course data across two conditions"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+dependencies = [
+    "numpy>=1.23",
+    "scipy>=1.9",
+    "pandas>=1.5",
+]
+
+[project.optional-dependencies]
+control = ["control>=0.9"]   # optional interop with python-control
+viz = ["matplotlib>=3.5", "networkx>=2.6"]    # required for nugap.viz
+dev = ["pytest>=7"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

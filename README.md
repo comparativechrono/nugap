@@ -24,9 +24,9 @@ systems that look very different on paper but behave similarly (and vice versa).
 Reference: G. Vinnicombe, *Frequency domain uncertainty and the graph
 topology*, IEEE TAC 38 (1993) 1371–1383.
 
-## The idea for your application
+## Why might you like to use the nu-gap metirc?
 
-You have time-course data for thousands of variables under two conditions. The
+In Omics such as transcriptomics it is normal to  have time-course data for thousands of variables under two conditions. The
 analysis is a **pairwise dynamic network**: within each condition, every
 variable is treated as a candidate input for every other variable, and a
 first-order input->output model is fitted for each ordered pair (i -> j). Then
@@ -217,7 +217,7 @@ FDR < 0.1.
 large (say > ~0.1), your fits are too unstable — lower the order, average
 replicates, or get more points before trusting the between-condition results.
 
-### Matching your MATLAB `tfest` workflow
+### Matching the common MATLAB `tfest` workflow
 
 `tfest` needs an input and a response, and returns a *continuous* transfer
 function; you then ran `gapmetric` on those. Here, fit with `method="arx"`
@@ -234,9 +234,8 @@ discovery you can stay discrete.
   undamped oscillators) are an edge case in the winding condition; fitted
   models from real data essentially never hit this.
 * The fitting layer is intentionally basic. For best results, match the model
-  class and order you used in MATLAB.
+  class and order you have previosuly used in MATLAB.
 
 ## License
 
-MIT — see the [LICENSE](LICENSE) file. (Fill in the copyright holder in that
-file before publishing.)
+MIT — see the [LICENSE](LICENSE) file. 

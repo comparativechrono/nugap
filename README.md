@@ -24,6 +24,44 @@ systems that look very different on paper but behave similarly (and vice versa).
 Reference: G. Vinnicombe, *Frequency domain uncertainty and the graph
 topology*, IEEE TAC 38 (1993) 1371–1383.
 
+## Install
+
+```bash
+pip install -e .
+```
+
+## Usage
+
+The metric on two systems directly:
+
+```python
+from nugap import tf, nu_gap
+
+P1 = tf([1.0], [1.0, 1.0])      # 1/(s+1), continuous
+P2 = tf([1.0], [1.0, 1.2])      # 1/(s+1.2)
+print(nu_gap(P1, P2))           # ~0.07
+
+# discrete systems use dt; the metric uses the unit circle automatically
+Pd = tf([0.5], [1.0, -0.5], dt=0.1)
+```
+
+The full two-condition comparison:
+
+```python
+from nugap import compare_conditions
+
+# data_A, data_B: dict mapping variable name -> trajectory (sampled at t)
+# u_A, u_B: the known stimulus, if you have one (else omit -> Prony fit)
+df = compare_conditions(
+    data_A, data_B, t,
+    u_A=u, u_B=u,           # drop these for output-only data
+    orders=range(1, 5),     # candidate model orders (AIC-selected)
+    method="arx",           # or "prony" (output-only), or "auto"
+    min_r2=0.9,             # flag variables with poor fits
+)
+# df is sorted by nu_gap descending, with fit quality per condition
+```
+
 ## Why might you like to use the nu-gap metirc?
 
 In Omics such as transcriptomics it is normal to  have time-course data for thousands of variables under two conditions. The
@@ -74,8 +112,7 @@ replicate fits.
    relationship is approximately self-contained. In a densely coupled system
    each output depends on many inputs, so a single pairwise model is
    misspecified and the within-condition noise floor rises. This is a property
-   of the method (the same one you ran in MATLAB), not the metric. Sparse or
-   modular systems behave well; dense ones need care.
+   of the method, not the metric. Sparse or modular systems behave well; dense ones need care.
 
 ### Scale
 
@@ -85,43 +122,6 @@ N variables -> N*(N-1) ordered edges (a million at N=1000). Each fit is a
 `joblib.Parallel` / `multiprocessing` for real datasets, and/or pass
 `include_pairs=` to test only a prescreened candidate set.
 
-## Install
-
-```bash
-pip install -e .
-```
-
-## Usage
-
-The metric on two systems directly:
-
-```python
-from nugap import tf, nu_gap
-
-P1 = tf([1.0], [1.0, 1.0])      # 1/(s+1), continuous
-P2 = tf([1.0], [1.0, 1.2])      # 1/(s+1.2)
-print(nu_gap(P1, P2))           # ~0.07
-
-# discrete systems use dt; the metric uses the unit circle automatically
-Pd = tf([0.5], [1.0, -0.5], dt=0.1)
-```
-
-The full two-condition comparison:
-
-```python
-from nugap import compare_conditions
-
-# data_A, data_B: dict mapping variable name -> trajectory (sampled at t)
-# u_A, u_B: the known stimulus, if you have one (else omit -> Prony fit)
-df = compare_conditions(
-    data_A, data_B, t,
-    u_A=u, u_B=u,           # drop these for output-only data
-    orders=range(1, 5),     # candidate model orders (AIC-selected)
-    method="arx",           # or "prony" (output-only), or "auto"
-    min_r2=0.9,             # flag variables with poor fits
-)
-# df is sorted by nu_gap descending, with fit quality per condition
-```
 
 See `examples/demo_network.py` for a small validated example, and
 `examples/demo_clock.py` for a full biological test case: synthetic circadian

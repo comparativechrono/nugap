@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nugap"
-version = "0.1.0"
+version = "0.5.0"
 description = "Vinnicombe nu-gap metric and a pipeline for comparing time-course data across two conditions"
 readme = "README.md"
 requires-python = ">=3.10"

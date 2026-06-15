@@ -124,11 +124,34 @@ def winding_condition(sys1: LTI, sys2: LTI, n: int = 8192, tol: float = 1e-7):
     return ok, value, touches
 
 
+def _band_contour(sys1: LTI, sys2: LTI, band, n: int):
+    """Contour restricted to an angular-frequency band [w_lo, w_hi] (rad per
+    unit time), mirrored to negative frequencies.
+
+    For periods P_max..P_min use ``band=(2*pi/P_max, 2*pi/P_min)``. For
+    discrete systems the angular frequency is mapped to the digital angle
+    theta = w*dt before placing points on the unit circle. Returns
+    (param, points) where param is the signed angular frequency.
+    """
+    w_lo, w_hi = float(band[0]), float(band[1])
+    if w_lo > w_hi:
+        w_lo, w_hi = w_hi, w_lo
+    w = np.linspace(w_lo, w_hi, max(2, n // 2))
+    param = np.concatenate([-w[::-1], w])
+    if sys1.is_discrete() or sys2.is_discrete():
+        dt = sys1.dt if sys1.is_discrete() else sys2.dt
+        theta = param * dt
+        return param, np.exp(1j * theta)
+    return param, 1j * param
+
+
 def nu_gap(
     sys1: LTI,
     sys2: LTI,
     n: int = 8192,
     tol: float = 1e-7,
+    band=None,
+    check_winding: bool = True,
     return_details: bool = False,
 ):
     """Vinnicombe nu-gap metric delta_nu(sys1, sys2) in [0, 1].
@@ -142,6 +165,21 @@ def nu_gap(
         Number of contour samples (resolution of the frequency sweep).
     tol : float
         Tolerance used to classify poles as unstable / on the boundary.
+    band : (w_lo, w_hi) or None
+        If given, the chordal distance is maximised only over the angular
+        frequency band [w_lo, w_hi] (rad per unit time) instead of the full
+        broadband contour. For an oscillation band of periods P_max..P_min
+        pass ``band=(2*pi/P_max, 2*pi/P_min)``. This reproduces the
+        frequency-local nu-gap of DyDE (Mombaerts et al. 2019), which is
+        appropriate when the signals are concentrated near one frequency.
+        Default ``None`` uses the full-spectrum (stringent) metric.
+    check_winding : bool
+        If True (default), the integer winding-number condition is evaluated
+        over the full contour and delta_nu is set to 1 when it fails
+        ("topologically far"). Set False to skip the winding test and return
+        the (band-restricted) supremum chordal distance directly, matching the
+        DyDE implementation. The winding condition is a global topological
+        property and is always evaluated over the full contour, never the band.
     return_details : bool
         If True, also return a dict with the sup-chordal distance, the
         winding condition value, and the frequency of the maximum.
@@ -155,7 +193,10 @@ def nu_gap(
     if sys1.is_discrete() and sys2.is_discrete() and sys1.dt != sys2.dt:
         warnings.warn("comparing discrete systems with different sample times")
 
-    param, points, closed = _contour(sys1, sys2, n)
+    if band is None:
+        param, points, _closed = _contour(sys1, sys2, n)
+    else:
+        param, points = _band_contour(sys1, sys2, band, n)
     P1 = sys1.freqresp(points)
     P2 = sys2.freqresp(points)
 
@@ -163,7 +204,10 @@ def nu_gap(
     imax = int(np.nanargmax(kappa))
     sup_kappa = float(kappa[imax])
 
-    ok, value, touches = winding_condition(sys1, sys2, n=n, tol=tol)
+    if check_winding:
+        ok, value, touches = winding_condition(sys1, sys2, n=n, tol=tol)
+    else:
+        ok, value, touches = True, 0, False
     delta = sup_kappa if ok else 1.0
 
     if return_details:
@@ -173,6 +217,7 @@ def nu_gap(
             "winding_ok": ok,
             "touches_origin": touches,
             "arg_at_max": float(param[imax]),
+            "band": band,
             "result": delta,
         }
         return delta, details

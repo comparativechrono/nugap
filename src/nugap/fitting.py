@@ -196,10 +196,40 @@ def fit_arx_fast(t, y, u, na: int, nb: int = 0, nk: int = 1, dt=None):
     return LTI(num, den, dt=dt), r2
 
 
-def fit_first_order(t, y, u, dt=None):
+def dc_gain(sys) -> float:
+    """Steady-state (zero-frequency) input->output gain |H| of an LTI system.
+
+    Discrete: |H(z=1)|. Continuous: |H(s=0)|. This is the magnitude of the
+    static transfer from input to output; a value near zero means the input
+    barely influences the output's steady state (a candidate "false"
+    input-output link). Returns +inf if the system has an integrator
+    (pole at the DC point).
+    """
+    pt = np.array([1.0 + 0j]) if sys.is_discrete() else np.array([0.0 + 0j])
+    with np.errstate(divide="ignore", invalid="ignore"):
+        val = sys.freqresp(pt)[0]
+    return float(np.abs(val))
+
+
+def fit_first_order(t, y, u, dt=None, min_dc_gain=None):
     """First-order ARX fit (one pole, no zero). Thin wrapper around
-    ``fit_arx_fast`` with na=1, nb=0, nk=1. Returns (LTI, r2)."""
-    return fit_arx_fast(t, y, u, na=1, nb=0, nk=1, dt=dt)
+    ``fit_arx_fast`` with na=1, nb=0, nk=1. Returns (LTI, r2).
+
+    Parameters
+    ----------
+    min_dc_gain : float or None
+        If given, models whose absolute DC gain is at or below this value are
+        treated as failed input-output fits and their r2 is set to 0.0, so
+        they are rejected by any downstream reliability gate. This mirrors the
+        low-DC-gain filter used by DyDE (Mombaerts et al. 2019) to discard
+        spurious links where the input does not drive the output. Default
+        ``None`` leaves the fit untouched (the stringent default used in the
+        main analysis relies on the simulation-R^2 gate alone).
+    """
+    sys, r2 = fit_arx_fast(t, y, u, na=1, nb=0, nk=1, dt=dt)
+    if min_dc_gain is not None and dc_gain(sys) <= float(min_dc_gain):
+        r2 = 0.0
+    return sys, r2
 
 
 def fit_model(

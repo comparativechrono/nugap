@@ -85,3 +85,25 @@ def test_winding_value_zero_for_identity():
 if __name__ == "__main__":
     import sys
     sys.exit(pytest.main([__file__, "-v"]))
+
+
+def test_band_limited_and_dc_gain_options():
+    """Band-limited nu-gap and DC-gain floor options behave as documented."""
+    import numpy as np
+    from nugap import tf, nu_gap, fit_first_order, dc_gain
+
+    a, b = tf([1], [1, 1.0]), tf([1], [1, 1.3])
+    full = nu_gap(a, b)                      # default: broadband + winding
+    band = nu_gap(a, b, band=(2 * np.pi / 36, 2 * np.pi / 16), check_winding=False)
+    assert 0.0 <= band <= full + 1e-9        # band-restricted sup cannot exceed broadband sup
+    # default must be unchanged by adding the (no-op) options explicitly
+    assert abs(nu_gap(a, b, band=None, check_winding=True) - full) < 1e-12
+
+    # DC-gain floor: an unreachable floor forces r2 -> 0 (model rejected)
+    T = np.arange(12) * 4.0
+    u = np.sin(2 * np.pi * T / 22.0)
+    y = 0.8 * np.sin(2 * np.pi * T / 22.0 + 0.4)
+    m, r2 = fit_first_order(T, y, u)
+    assert dc_gain(m) > 0
+    _, r2_floored = fit_first_order(T, y, u, min_dc_gain=1e9)
+    assert r2_floored == 0.0

@@ -108,7 +108,7 @@ methods paper:
 
 ```
 Hearn, T. J. nugap: condition-specific changes in dynamical relationships via the
-Vinnicombe ν-gap. Software archive: Zenodo, DOI: 10.5281/zenodo.XXXXXXX.
+Vinnicombe ν-gap. Software archive: Zenodo, DOI: 10.5281/zenodo.20693443.
 
 <methods paper reference — to be added>
 ```
